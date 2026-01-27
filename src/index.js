@@ -1,18 +1,28 @@
 import dotenv from 'dotenv';
-dotenv.config({path: './.env'});
-import connectDB from './database/index.js'
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: resolve(__dirname, './env') });
+
+console.log('✅ ENV LOADED!');
+console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
+
+import connectDB from './database/index.js';
 import { app } from './app.js';
 
-
 connectDB()
-.then( ()=>{
-    app.on('error', (error)=>{
-        console.log("Error starting the server: ", error);
-    });
-    app.listen(process.env.PORT || 3000, ()=>{
-        console.log(`🚀 Server is running on port ${process.env.PORT}`);
+.then(() => {
+    console.log('✅ MongoDB connected');
+    
+    const PORT = process.env.PORT || 5000;
+    
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
 })
 .catch((error) => {
-    console.log("Error connecting to MongoDB: ", error);
+    console.error("❌ MongoDB connection failed:", error);
+    process.exit(1);
 });
