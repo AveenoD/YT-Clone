@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-     "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "Javascript",
@@ -20,6 +20,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "ffprobe": "^1.1.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
