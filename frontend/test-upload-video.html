@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video API Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .response-box pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .video-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .video-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .video-card-body {
+            padding: 15px;
+        }
+
+        .video-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .video-card-meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .auth-status {
+            padding: 10px 20px;
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .auth-status.not-auth {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎥 Video API Test Suite</h1>
+            <p>Complete testing interface for video upload and management</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="openTab('auth')">🔐 Authentication</button>
+            <button class="tab" onclick="openTab('upload')">📤 Upload Video</button>
+            <button class="tab" onclick="openTab('videos')">📹 Get Videos</button>
+            <button class="tab" onclick="openTab('single')">🎬 Single Video</button>
+            <button class="tab" onclick="openTab('manage')">⚙️ Manage Video</button>
+        </div>
+
+        <!-- Authentication Tab -->
+        <div id="auth" class="tab-content active">
+            <h2>Authentication</h2>
+            <div id="authStatus" class="auth-status not-auth">
+                <strong>Status:</strong> Not Authenticated
+            </div>
+
+            <div class="form-group">
+                <label>API Base URL</label>
+                <input type="text" id="apiBaseUrl" value="http://localhost:5000/api/v1" placeholder="http://localhost:5000/api/v1/users/login">
+            </div>
+
+            <h3>Login</h3>
+            <div class="form-group">
+                <label>Email or Username</label>
+                <input type="text" id="loginIdentifier" placeholder="Enter email or username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password">
+            </div>
+            <button class="btn" onclick="login()">Login</button>
+
+            <div id="authResponse" class="response-box" style="display: none;">
+                <pre id="authResponseText"></pre>
+            </div>
+        </div>
+
+        <!-- Upload Video Tab -->
+        <div id="upload" class="tab-content">
+            <h2>Upload New Video</h2>
+            
+            <div class="form-group">
+                <label>Video Title *</label>
+                <input type="text" id="videoTitle" placeholder="Enter video title">
+            </div>
+
+            <div class="form-group">
+                <label>Video Description *</label>
+                <textarea id="videoDescription" placeholder="Enter video description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Video File * (MP4, WebM, etc.)</label>
+                <input type="file" id="videoFile" accept="video/*">
+            </div>
+
+            <div class="form-group">
+                <label>Thumbnail Image * (JPG, PNG)</label>
+                <input type="file" id="thumbnailFile" accept="image/*">
+            </div>
+
+            <button class="btn" onclick="uploadVideo()">Upload Video</button>
+
+            <div id="uploadResponse" class="response-box" style="display: none;">
+                <pre id="uploadResponseText"></pre>
+            </div>
+        </div>
+
+        <!-- Get Videos Tab -->
+        <div id="videos" class="tab-content">
+            <h2>Get All Videos</h2>
+
+            <div class="filters">
+                <div class="form-group">
+                    <label>Search Query</label>
+                    <input type="text" id="searchQuery" placeholder="Search videos...">
+                </div>
+
+                <div class="form-group">
+                    <label>Sort By</label>
+                    <select id="sortBy">
+                        <option value="createdAt">Created At</option>
+                        <option value="viewsCount">Views</option>
+                        <option value="title">Title</option>
+                        <option value="duration">Duration</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Sort Type</label>
+                    <select id="sortType">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>User ID (Optional)</label>
+                    <input type="text" id="userId" placeholder="Filter by user ID">
+                </div>
+
+                <div class="form-group">
+                    <label>Page</label>
+                    <input type="text" id="page" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Limit</label>
+                    <input type="text" id="limit" value="10">
+                </div>
+            </div>
+
+            <button class="btn" onclick="getAllVideos()">Get Videos</button>
+
+            <div id="videosResponse" class="response-box" style="display: none;">
+                <pre id="videosResponseText"></pre>
+            </div>
+
+            <div id="videoGrid" class="video-grid"></div>
+        </div>
+
+        <!-- Single Video Tab -->
+        <div id="single" class="tab-content">
+            <h2>Get Video by ID</h2>
+
+            <div class="form-group">
+                <label>Video ID *</label>
+                <input type="text" id="getVideoId" placeholder="Enter video ID">
+            </div>
+
+            <button class="btn" onclick="getVideoById()">Get Video</button>
+
+            <div id="singleVideoResponse" class="response-box" style="display: none;">
+                <pre id="singleVideoResponseText"></pre>
+            </div>
+        </div>
+
+        <!-- Manage Video Tab -->
+        <div id="manage" class="tab-content">
+            <h2>Manage Video</h2>
+
+            <div class="form-group">
+                <label>Video ID *</label>
+                <input type="text" id="manageVideoId" placeholder="Enter video ID">
+            </div>
+
+            <h3>Update Video</h3>
+            <div class="form-group">
+                <label>New Title</label>
+                <input type="text" id="updateTitle" placeholder="Leave empty to keep current">
+            </div>
+
+            <div class="form-group">
+                <label>New Description</label>
+                <textarea id="updateDescription" placeholder="Leave empty to keep current"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>New Thumbnail (Optional)</label>
+                <input type="file" id="updateThumbnail" accept="image/*">
+            </div>
+
+            <button class="btn" onclick="updateVideo()">Update Video</button>
+
+            <h3 style="margin-top: 30px;">Other Actions</h3>
+            <button class="btn" onclick="togglePublishStatus()" style="margin-right: 10px;">Toggle Publish Status</button>
+            <button class="btn" onclick="deleteVideo()" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">Delete Video</button>
+
+            <div id="manageResponse" class="response-box" style="display: none;">
+                <pre id="manageResponseText"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken') || '';
+        let apiBase = '';
+
+        // Initialize
+        window.onload = function() {
+            apiBase = document.getElementById('apiBaseUrl').value;
+            updateAuthStatus();
+        };
+
+        function updateAuthStatus() {
+            const statusDiv = document.getElementById('authStatus');
+            if (authToken) {
+                statusDiv.className = 'auth-status';
+                statusDiv.innerHTML = '<strong>Status:</strong> ✅ Authenticated (Token stored)';
+            } else {
+                statusDiv.className = 'auth-status not-auth';
+                statusDiv.innerHTML = '<strong>Status:</strong> ❌ Not Authenticated';
+            }
+        }
+
+        function openTab(tabName) {
+            const tabs = document.getElementsByClassName('tab-content');
+            const tabButtons = document.getElementsByClassName('tab');
+            
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove('active');
+            }
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showResponse(elementId, textId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            const textElement = document.getElementById(textId);
+            
+            element.style.display = 'block';
+            element.className = isError ? 'response-box error' : 'response-box success';
+            textElement.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function login() {
+            apiBase = document.getElementById('apiBaseUrl').value;
+            const identifier = document.getElementById('loginIdentifier').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!identifier || !password) {
+                alert('Please enter both identifier and password');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBase}/users/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: identifier,
+                        username: identifier,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.data.accessToken;
+                    localStorage.setItem('authToken', authToken);
+                    updateAuthStatus();
+                    showResponse('authResponse', 'authResponseText', data);
+                } else {
+                    showResponse('authResponse', 'authResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('authResponse', 'authResponseText', { error: error.message }, true);
+            }
+        }
+
+        async function uploadVideo() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const title = document.getElementById('videoTitle').value;
+            const description = document.getElementById('videoDescription').value;
+            const videoFile = document.getElementById('videoFile').files[0];
+            const thumbnailFile = document.getElementById('thumbnailFile').files[0];
+
+            if (!title || !description || !videoFile || !thumbnailFile) {
+                alert('Please fill all required fields and select both files');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('videoFile', videoFile);
+            formData.append('thumbnail', thumbnailFile);
+
+            try {
+                const response = await fetch(`${apiBase}/videos/publish`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse('uploadResponse', 'uploadResponseText', data);
+                    // Clear form
+                    document.getElementById('videoTitle').value = '';
+                    document.getElementById('videoDescription').value = '';
+                    document.getElementById('videoFile').value = '';
+                    document.getElementById('thumbnailFile').value = '';
+                } else {
+                    showResponse('uploadResponse', 'uploadResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('uploadResponse', 'uploadResponseText', { error: error.message }, true);
+            }
+        }
+
+        async function getAllVideos() {
+            const query = document.getElementById('searchQuery').value;
+            const sortBy = document.getElementById('sortBy').value;
+            const sortType = document.getElementById('sortType').value;
+            const userId = document.getElementById('userId').value;
+            const page = document.getElementById('page').value;
+            const limit = document.getElementById('limit').value;
+
+            const params = new URLSearchParams();
+            if (query) params.append('query', query);
+            if (sortBy) params.append('sortBy', sortBy);
+            if (sortType) params.append('sortType', sortType);
+            if (userId) params.append('userId', userId);
+            if (page) params.append('page', page);
+            if (limit) params.append('limit', limit);
+
+            try {
+                const response = await fetch(`${apiBase}/videos?${params.toString()}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse('videosResponse', 'videosResponseText', data);
+                    displayVideoGrid(data.data.videos);
+                } else {
+                    showResponse('videosResponse', 'videosResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('videosResponse', 'videosResponseText', { error: error.message }, true);
+            }
+        }
+
+        function displayVideoGrid(videos) {
+            const grid = document.getElementById('videoGrid');
+            
+            if (!videos || videos.length === 0) {
+                grid.innerHTML = '<p>No videos found</p>';
+                return;
+            }
+
+            grid.innerHTML = videos.map(video => `
+                <div class="video-card">
+                    <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://via.placeholder.com/300x180?text=No+Thumbnail'">
+                    <div class="video-card-body">
+                        <div class="video-card-title">${video.title}</div>
+                        <div class="video-card-meta">👤 ${video.owner?.username || 'Unknown'}</div>
+                        <div class="video-card-meta">👁️ ${video.viewsCount || 0} views</div>
+                        <div class="video-card-meta">👍 ${video.likeCount || 0} likes</div>
+                        <div class="video-card-meta">💬 ${video.commentCount || 0} comments</div>
+                        <div class="video-card-meta">⏱️ ${formatDuration(video.duration)}</div>
+                        <div class="video-card-meta">🆔 ${video._id}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return 'N/A';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        async function getVideoById() {
+            const videoId = document.getElementById('getVideoId').value;
+
+            if (!videoId) {
+                alert('Please enter a video ID');
+                return;
+            }
+
+            try {
+                const headers = {};
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
+                const response = await fetch(`${apiBase}/videos/${videoId}`, {
+                    headers: headers
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse('singleVideoResponse', 'singleVideoResponseText', data);
+                } else {
+                    showResponse('singleVideoResponse', 'singleVideoResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('singleVideoResponse', 'singleVideoResponseText', { error: error.message }, true);
+            }
+        }
+
+        async function updateVideo() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const videoId = document.getElementById('manageVideoId').value;
+            const title = document.getElementById('updateTitle').value;
+            const description = document.getElementById('updateDescription').value;
+            const thumbnail = document.getElementById('updateThumbnail').files[0];
+
+            if (!videoId) {
+                alert('Please enter a video ID');
+                return;
+            }
+
+            const formData = new FormData();
+            if (title) formData.append('title', title);
+            if (description) formData.append('description', description);
+            if (thumbnail) formData.append('thumbnail', thumbnail);
+
+            try {
+                const response = await fetch(`${apiBase}/videos/${videoId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse('manageResponse', 'manageResponseText', data);
+                } else {
+                    showResponse('manageResponse', 'manageResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('manageResponse', 'manageResponseText', { error: error.message }, true);
+            }
+        }
+
+        async function togglePublishStatus() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const videoId = document.getElementById('manageVideoId').value;
+
+            if (!videoId) {
+                alert('Please enter a video ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBase}/videos/${videoId}/publish-status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse('manageResponse', 'manageResponseText', data);
+                } else {
+                    showResponse('manageResponse', 'manageResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('manageResponse', 'manageResponseText', { error: error.message }, true);
+            }
+        }
+
+        async function deleteVideo() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const videoId = document.getElementById('manageVideoId').value;
+
+            if (!videoId) {
+                alert('Please enter a video ID');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBase}/videos/${videoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse('manageResponse', 'manageResponseText', data);
+                } else {
+                    showResponse('manageResponse', 'manageResponseText', data, true);
+                }
+            } catch (error) {
+                showResponse('manageResponse', 'manageResponseText', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>
