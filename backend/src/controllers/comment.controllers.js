@@ -46,6 +46,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $project: {
+                _id: 1,
                 fullName: "$owner.fullName",
                 avatar: "$owner.avatar",
                 content: 1,
