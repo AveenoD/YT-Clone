@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import AuthPage from './components/auth/AuthPage';
+import { AuthProvider, useAuth } from './context/AuthContext'; // ✅ FIXED: Import useAuth
+import Navbar from './components/layout/Navbar';
+import Sidebar from './components/layout/Sidebar';
 import Home from './pages/Home';
 import VideoPlayer from './pages/VideoPlayer';
 import Dashboard from './pages/Dashboard';
+import EditProfile from './pages/EditProfile';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth(); // ✅ Now useAuth is available
   
   if (loading) {
     return (
@@ -24,19 +28,39 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
+// Layout Wrapper Component
+const Layout = ({ children }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
+      <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+      <main className="pt-16">{children}</main>
+    </div>
+  );
+};
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/register" element={<AuthPage />} />
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
+          {/* Protected Routes with Layout */}
           <Route 
             path="/" 
             element={
               <ProtectedRoute>
-                <Home />
+                <Layout>
+                  <Home />
+                </Layout>
               </ProtectedRoute>
             } 
           />
@@ -45,7 +69,9 @@ function App() {
             path="/watch/:videoId" 
             element={
               <ProtectedRoute>
-                <VideoPlayer />
+                <Layout>
+                  <VideoPlayer />
+                </Layout>
               </ProtectedRoute>
             } 
           />
@@ -54,15 +80,28 @@ function App() {
             path="/dashboard" 
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/edit-profile" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <EditProfile />
+                </Layout>
               </ProtectedRoute>
             } 
           />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
