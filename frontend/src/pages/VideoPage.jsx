@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useToast } from "../toaster/useToast";
-import { VideoCardSkeleton } from "../components/VideoCard";
+import { useToast } from "../toaster/UseToast.js";
+import { VideoCardSkeleton } from "../components/Videocard";
 import {
   ThumbsUp, Share2, Bell, BellOff,
   Send, Trash2, ChevronDown, ChevronUp,
