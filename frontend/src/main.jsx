@@ -9,7 +9,8 @@ import HomePage from './pages/HomePage.jsx';
 import { ToastProvider } from './toaster/ToastContext';
 import { ToastContainer  } from './toaster/ToastContainer';
 import VideoPage from './pages/VideoPage.jsx';
-
+import UploadPage from './pages/UploadPage';
+import ChannelPage from './pages/ChannelPage.jsx'
 const router = createBrowserRouter([
   {
     path:'/login',
@@ -28,7 +29,14 @@ const router = createBrowserRouter([
       },
       { 
          path: 'video/:videoId', element: <VideoPage /> 
+      },
+      { 
+        path: 'upload', element: <UploadPage /> 
+      },
+      { 
+        path: 'channel/:userId', element: <ChannelPage />
       }
+
     ]
   }
 ]);

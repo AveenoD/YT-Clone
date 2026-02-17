@@ -6,7 +6,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Options } from "../utils/Options.js";
 import { Video } from "../models/video.models.js";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
+import mongoose,{isValidObjectId} from "mongoose";
+import { Subscription } from "../models/subscriptions.models.js";
 const generateAccessTokenAndRefreshToken = async (userID) =>{
     try {
     
@@ -593,6 +594,47 @@ const getUploadedVideos = asyncHandler(async (req, res) => {
         )
     );
 });
+const getUserById = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid user ID")
+  }
+
+  const user = await User.findById(userId)
+    .select("-password -refreshToken")
+
+  if (!user) {
+    throw new ApiError(404, "User not found")
+  }
+
+  let isSubscribed      = false
+  let subscribersCount  = 0
+
+  const [subCheck, subCount] = await Promise.all([
+    // only check if someone is logged in
+    req.user
+      ? Subscription.findOne({
+          subscriber: req.user._id,
+          channel: userId
+        })
+      : Promise.resolve(null),
+
+    // always get total count
+    Subscription.countDocuments({ channel: userId })
+  ])
+
+  isSubscribed     = !!subCheck
+  subscribersCount = subCount
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      ...user.toObject(),
+      isSubscribed,       // ✅ frontend reads this on load
+      subscribersCount    // ✅ accurate count from DB
+    }, "User fetched successfully")
+  )
+})
 export { 
     registerUser,
     loginUser,
@@ -605,5 +647,6 @@ export {
     updateUserCoverImage,
     getUserChannelDetails,
     getWatchHistory,
-    getUploadedVideos
+    getUploadedVideos,
+    getUserById 
 };
