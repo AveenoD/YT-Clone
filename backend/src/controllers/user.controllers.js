@@ -408,60 +408,57 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
     )
 })
 
-const getWatchHistory = asyncHandler(async(req, res) =>{
-    const user = await User.aggregate([
-        {
-            $match:{
-                _id: new mongoose.Types.ObjectId(req.user._id)
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id)
+      }
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",      // ✅ Bug 1 fixed
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1
+                  }
+                }
+              ]
             }
-        },
-        {
-            $lookup:{
-                from:"videos",
-                localField:"watchHistory",
-                foreignField:"_id",
-                as:"watchHistory",
-                pipeline:[
-                    {
-                        $lookup:{
-                            from:"users",
-                            localField:"owner",
-                            foreignField:"users",
-                            as:"owner",
-                            pipeline:[
-                                {
-                                    $project:{
-                                        fullName:1,
-                                        username:1,
-                                        avatar:1
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        $addFields:{
-                            owner:{
-                                $first: "$owner"
-                            }
-                        }
-                    }
-                ]
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner"
+              }
             }
-        }
-    ])
+          }
+        ]
+      }
+    }
+  ]);
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(
-            200,
-            user[0].watchHisory,
-            "Watch History fetched successfully"
-
-        )
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      user[0].watchHistory,   // ✅ Bug 2 fixed — typo gone
+      "Watch History fetched successfully"
     )
-})
+  );
+});
 const getUploadedVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 12, sortBy = "createdAt", sortType = "desc" } = req.query;
 

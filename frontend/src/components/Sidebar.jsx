@@ -264,7 +264,7 @@ useEffect(() => {
             <NavItem to="/history"    icon={History}    label="Watch History" isActive={pathname === "/history"} />
             <NavItem to="/liked"      icon={ThumbsUp}   label="Liked Videos"  isActive={pathname === "/liked"} />
             <NavItem to="/watchlater" icon={Clock}      label="Watch Later"   isActive={pathname === "/watchlater"} badge="4" />
-            <NavItem to="/my-videos"  icon={PlaySquare} label="My Videos"     isActive={pathname === "/my-videos"} />
+            <NavItem to="/profile"  icon={PlaySquare} label="My Videos"     isActive={pathname === "/profile"} />
           </div>
 
           <SectionDivider />

@@ -8,7 +8,7 @@ import uploadOnCloudinary from "../utils/cloudinary.js"
 import { Comment } from "../models/comment.models.js"
 import { Like } from "../models/like.models.js"
 import fs from "fs"
-import  {Subscription}  from "../models/subscriptions.models.js"
+import { Subscription } from "../models/subscriptions.models.js"
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
@@ -245,7 +245,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     ])
 
     // ✅ Check liked AND subscribed together in one Promise.all
-    let isLiked      = false
+    let isLiked = false
     let isSubscribed = false
 
     if (req.user) {
@@ -260,7 +260,7 @@ const getVideoById = asyncHandler(async (req, res) => {
             })
         ])
 
-        isLiked      = !!existingLike
+        isLiked = !!existingLike
         isSubscribed = !!existingSubscription  // ✅ now included in response
     }
 
@@ -268,7 +268,12 @@ const getVideoById = asyncHandler(async (req, res) => {
     await Video.findByIdAndUpdate(videoId, {
         $inc: { viewsCount: 1 }
     })
-
+    if (req.user) {
+        await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { watchHistory: videoId }
+        
+        });
+    }
     const videoData = {
         ...video.toObject(),
         likeCount,
@@ -329,7 +334,7 @@ const updateVideo = asyncHandler(async (req, res) => {
             throw new ApiError(500, "Failed to upload new thumbnail")
         }
 
-        oldThumbnailUrl      = video.thumbnail
+        oldThumbnailUrl = video.thumbnail
         updateData.thumbnail = thumbnailUploadResponse.url
 
         if (fs.existsSync(req.file.path)) {
