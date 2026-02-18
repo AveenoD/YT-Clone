@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useToast } from "../toaster/UseToast";
 import axios from "axios";
 import {
   Home,
@@ -29,9 +30,9 @@ function NavItem({ to, icon: Icon, label, isActive, onClick, badge }) {
     flex items-center gap-3.5 px-3 py-2.5 rounded-xl w-full
     text-sm font-medium transition-all duration-150 group relative
   `;
-  const active   = "bg-rose-50 text-rose-600 font-semibold";
+  const active = "bg-rose-50 text-rose-600 font-semibold";
   const inactive = "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
-
+  const toast = useToast();
   const content = (
     <>
       <Icon
@@ -103,68 +104,69 @@ function UserFooterSkeleton() {
 
 // ── Main Sidebar ──────────────────────────────────────────────
 export default function Sidebar({ isOpen, onClose }) {   // ✅ named function
-  const location   = useLocation();
-  const navigate   = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
   const sidebarRef = useRef(null);
-  const pathname   = location.pathname;
+  const pathname = location.pathname;
 
   // ── States ───────────────────────────────────────────────
-  const [user, setUser]             = useState(null);       // ✅ null default
+  const [user, setUser] = useState(null);       // ✅ null default
   const [userLoading, setUserLoading] = useState(true);
-  const [channels, setChannels]     = useState([]);
+  const [channels, setChannels] = useState([]);
   const [channelsLoading, setChannelsLoading] = useState(true);
-
+  const [watchLaterCount, setWatchLaterCount] = useState(0);
   // ── Fetch current user from API ──────────────────────────
-useEffect(() => {
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    setUserLoading(false);
-    setChannelsLoading(false);
-    return;
-  }
-
-  const headers = { Authorization: `Bearer ${token}` };
-
-  axios
-    .get(`${BASE_URL}/users/current-user`, { headers })
-    .then((res) => {
-      const currentUser = res.data.data;
-
-      // ✅ Guard — only proceed if user exists and has _id
-      if (!currentUser || !currentUser._id) {
-        setChannelsLoading(false);
-        return;
-      }
-
-      setUser(currentUser);
-
-      // ✅ Safe now — _id is confirmed to exist
-      return axios.get(
-        `${BASE_URL}/subscriptions/user/${currentUser._id}/subscribed-channels`,
-        { headers }
-      );
-    })
-    .then((res) => {
-      // ✅ Guard — only set if response exists
-      if (!res) return;
-      const subscribedChannels = res.data.data.subscribedChannels || [];
-  const flatChannels = subscribedChannels.map(item => item.channel);
-      setChannels(flatChannels);
-    })
-    .catch((err) => {
-      console.error("Sidebar error:", err.response?.data || err.message);
-      if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/login");
-      }
-    })
-    .finally(() => {
+    if (!token) {
       setUserLoading(false);
       setChannelsLoading(false);
-    });
+      return;
+    }
 
-}, []); // runs once on mount
+    const headers = { Authorization: `Bearer ${token}` };
+
+    axios
+      .get(`${BASE_URL}/users/current-user`, { headers })
+      .then((res) => {
+        const currentUser = res.data.data;
+
+        // ✅ Guard — only proceed if user exists and has _id
+        if (!currentUser || !currentUser._id) {
+          setChannelsLoading(false);
+          return;
+        }
+
+        setUser(currentUser);
+
+        // ✅ Safe now — _id is confirmed to exist
+        return axios.get(
+          `${BASE_URL}/subscriptions/user/${currentUser._id}/subscribed-channels`,
+          { headers }
+        );
+      })
+      .then((res) => {
+        // ✅ Guard — only set if response exists
+        if (!res) return;
+        const subscribedChannels = res.data.data.subscribedChannels || [];
+        const flatChannels = subscribedChannels.map(item => item.channel);
+        setChannels(flatChannels);
+        
+      })
+      .catch((err) => {
+        toast.error("Failed to load user data");
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
+      })
+      .finally(() => {
+        setUserLoading(false);
+        setChannelsLoading(false);
+      });
+
+  }, []); // runs once on mount
 
   // ── Close on outside click (mobile) ─────────────────────
   useEffect(() => {
@@ -251,9 +253,9 @@ useEffect(() => {
 
           {/* ── MAIN NAVIGATION ──────────────────────── */}
           <div className="space-y-0.5">
-            <NavItem to="/"         icon={Home}    label="Home"     isActive={pathname === "/"} />
-            <NavItem to="/explore"  icon={Compass} label="Explore"  isActive={pathname === "/explore"} />
-            <NavItem to="/trending" icon={Flame}   label="Trending" isActive={pathname === "/trending"} />
+            <NavItem to="/" icon={Home} label="Home" isActive={pathname === "/"} />
+            <NavItem to="/explore" icon={Compass} label="Explore" isActive={pathname === "/explore"} />
+            <NavItem to="/trending" icon={Flame} label="Trending" isActive={pathname === "/trending"} />
           </div>
 
           <SectionDivider />
@@ -261,10 +263,16 @@ useEffect(() => {
           {/* ── YOUR LIBRARY ─────────────────────────── */}
           <SectionDivider label="Your Library" />
           <div className="space-y-0.5">
-            <NavItem to="/history"    icon={History}    label="Watch History" isActive={pathname === "/history"} />
-            <NavItem to="/liked"      icon={ThumbsUp}   label="Liked Videos"  isActive={pathname === "/liked"} />
-            <NavItem to="/watchlater" icon={Clock}      label="Watch Later"   isActive={pathname === "/watchlater"} badge="4" />
-            <NavItem to="/profile"  icon={PlaySquare} label="My Videos"     isActive={pathname === "/profile"} />
+            <NavItem to="/history" icon={History} label="Watch History" isActive={pathname === "/history"} />
+            <NavItem to="/liked" icon={ThumbsUp} label="Liked Videos" isActive={pathname === "/liked"} />
+            <NavItem
+              to="/watchlater"
+              icon={Clock}
+              label="Watch Later"
+              isActive={pathname === "/watchlater"}
+              badge={watchLaterCount > 0 ? watchLaterCount : undefined}  // ✅ dynamic
+            />
+            <NavItem to="/profile" icon={PlaySquare} label="My Videos" isActive={pathname === "/profile"} />
           </div>
 
           <SectionDivider />
@@ -352,10 +360,10 @@ useEffect(() => {
           {/* ── EXPLORE BY CATEGORY ──────────────────── */}
           <SectionDivider label="Explore" />
           <div className="space-y-0.5">
-            <NavItem to="/category/music"  icon={Music2}    label="Music"  isActive={pathname === "/category/music"} />
-            <NavItem to="/category/gaming" icon={Gamepad2}  label="Gaming" isActive={pathname === "/category/gaming"} />
-            <NavItem to="/category/news"   icon={Newspaper} label="News"   isActive={pathname === "/category/news"} />
-            <NavItem to="/category/sports" icon={Trophy}    label="Sports" isActive={pathname === "/category/sports"} />
+            <NavItem to="/category/music" icon={Music2} label="Music" isActive={pathname === "/category/music"} />
+            <NavItem to="/category/gaming" icon={Gamepad2} label="Gaming" isActive={pathname === "/category/gaming"} />
+            <NavItem to="/category/news" icon={Newspaper} label="News" isActive={pathname === "/category/news"} />
+            <NavItem to="/category/sports" icon={Trophy} label="Sports" isActive={pathname === "/category/sports"} />
           </div>
 
           <SectionDivider />
@@ -363,7 +371,7 @@ useEffect(() => {
           {/* ── ACCOUNT ──────────────────────────────── */}
           <SectionDivider label="Account" />
           <div className="space-y-0.5">
-            <NavItem to="/profile"  icon={User}     label="Profile"  isActive={pathname === "/profile"} />
+            <NavItem to="/profile" icon={User} label="Profile" isActive={pathname === "/profile"} />
             <NavItem to="/settings" icon={Settings} label="Settings" isActive={pathname === "/settings"} />
             <NavItem
               icon={LogOut}
@@ -402,7 +410,7 @@ useEffect(() => {
                                   flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.fullName?.charAt(0)?.toUpperCase() ||
-                       user?.username?.charAt(0)?.toUpperCase() || "U"}
+                        user?.username?.charAt(0)?.toUpperCase() || "U"}
                     </span>
                   </div>
                 )}

@@ -40,7 +40,12 @@ const userSchema = new Schema({
     refreshToken:{
         type: String,
     },
-    
+    watchLater: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Video"
+  }
+]
 },
 {
     timestamps: true,

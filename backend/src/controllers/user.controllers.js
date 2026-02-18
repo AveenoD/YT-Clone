@@ -632,6 +632,55 @@ const getUserById = asyncHandler(async (req, res) => {
     }, "User fetched successfully")
   )
 })
+const addToWatchLater = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video ID");
+  }
+
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $addToSet: { watchLater: videoId }  // only adds if not already there
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Added to Watch Later")
+  );
+});
+
+// Remove from watch later
+const removeFromWatchLater = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $pull: { watchLater: videoId }  // removes the video
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Removed from Watch Later")
+  );
+});
+
+// Get all watch later videos
+const getWatchLater = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+    .populate({
+      path: "watchLater",
+      populate: {
+        path: "owner",
+        select: "username fullName avatar"
+      }
+    });
+
+  return res.status(200).json(
+    new ApiResponse(200, user.watchLater, "Watch Later fetched successfully")
+  );
+});
 export { 
     registerUser,
     loginUser,
@@ -645,5 +694,5 @@ export {
     getUserChannelDetails,
     getWatchHistory,
     getUploadedVideos,
-    getUserById 
+    getUserById,addToWatchLater, removeFromWatchLater, getWatchLater
 };

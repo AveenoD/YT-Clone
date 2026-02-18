@@ -15,6 +15,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import HistoryPage     from './pages/HistoryPage.jsx';
 import LikedVideosPage from './pages/LikedVideosPage';
 import SettingsPage from './pages/SettingsPage.jsx';
+import WatchLaterPage from './pages/WatchLaterPage';
 const router = createBrowserRouter([
   {
     path: '/login',
@@ -54,6 +55,9 @@ const router = createBrowserRouter([
       {
         path: 'settings', element: <SettingsPage/>
 
+      },
+      { 
+        path: 'watchlater', element: <WatchLaterPage /> 
       }
 
     ]

@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useToast } from "../toaster/UseToast.js";
-import { VideoCardSkeleton } from "../components/Videocard";
+import { VideoCardSkeleton } from "../components/VideoCard";
+
 import {
   ThumbsUp, Share2, Bell, BellOff,
   Send, Trash2, ChevronDown, ChevronUp,
-  Eye, Calendar, MessageCircle
+  Eye, Calendar, MessageCircle, Clock  
 } from "lucide-react";
 
 const BASE_URL = "http://localhost:5000/api/v1";
@@ -118,7 +119,7 @@ export default function VideoPage() {
   const navigate = useNavigate();
   const { videoId } = useParams();              // ✅ get videoId from URL
 
-  // ── States ──────────────────────────────────────────────
+  const [inWatchLater, setInWatchLater] = useState(false);
   const [video, setVideo] = useState(null);   // single object
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState([]);     // array
@@ -145,6 +146,7 @@ export default function VideoPage() {
     async function fetchVideo() {
       setLoading(true);
 
+
       try {
         const response = await axios.get(
           `${BASE_URL}/videos/${videoId}`,   // ✅ template literal with real videoId
@@ -152,7 +154,7 @@ export default function VideoPage() {
         );
 
         const fetchedVideo = response.data.data;   // single video object
-
+        setInWatchLater(fetchedVideo.inWatchLater || false);
         if (!fetchedVideo) {
           toast.info("Video not found");
           navigate("/");    // redirect home if video doesn't exist
@@ -178,12 +180,8 @@ export default function VideoPage() {
     }
 
     fetchVideo();
-  }, [videoId]);   // ✅ re-runs if videoId changes (navigation between videos)
-
-  // ────────────────────────────────────────────────────────
-  // Task 2 — Fetch comments
-  // GET /api/v1/comments/:videoId
-  // ────────────────────────────────────────────────────────
+    
+  }, [videoId]);   
   useEffect(() => {
     if (!videoId) return;
 
@@ -202,7 +200,7 @@ export default function VideoPage() {
 
       } catch (error) {
         // fail silently — comments not loading shouldn't break the page
-        console.error("Comments fetch error:", error);
+        toast.error("Failed to load comments");
       } finally {
         setCommentsLoading(false);
       }
@@ -211,10 +209,7 @@ export default function VideoPage() {
     fetchComments();
   }, [videoId]);
 
-  // ────────────────────────────────────────────────────────
-  // Task 3 — Toggle like
-  // POST /api/v1/likes/video/:videoId  (needs token)
-  // ────────────────────────────────────────────────────────
+ 
   async function handleLike() {
     if (!token) {
       toast.warning("Please login to like videos");
@@ -249,11 +244,6 @@ export default function VideoPage() {
     }
   }
 
-  // ────────────────────────────────────────────────────────
-  // Task 4 — Toggle subscribe
-  // POST /api/v1/subscriptions/subscribe/:channelId
-  // channelId = video.owner._id
-  // ────────────────────────────────────────────────────────
   async function handleSubscribe() {
     if (!token) {
       toast.warning("Please login to subscribe");
@@ -288,15 +278,11 @@ export default function VideoPage() {
 
     } catch (error) {
       setSubscribed(wasSubscribed);
-      console.log("Subscribe error:", error.response?.data);
+      
       toast.error(error.response?.data?.message || "Failed to update subscription");
     }
   }
-  // ────────────────────────────────────────────────────────
-  // Task 5 — Post a comment
-  // POST /api/v1/comments/:videoId  (needs token)
-  // body: { content: newComment }
-  // ────────────────────────────────────────────────────────
+  
   async function handleComment(e) {
     e.preventDefault();   // prevent page refresh
 
@@ -338,10 +324,7 @@ export default function VideoPage() {
     }
   }
 
-  // ────────────────────────────────────────────────────────
-  // Delete comment
-  // DELETE /api/v1/comments/c/:commentId
-  // ────────────────────────────────────────────────────────
+  
   async function handleDeleteComment(commentId) {
     try {
       await axios.delete(
@@ -358,7 +341,39 @@ export default function VideoPage() {
     }
   }
 
-  // ── UI ────────────────────────────────────────────────────
+ async function handleWatchLater() {
+      if (!token) {
+        toast.warning("Please login to save videos");
+        navigate("/login");
+        return;
+      }
+
+      const wasInWatchLater = inWatchLater;
+      setInWatchLater(!wasInWatchLater);
+
+      try {
+        if (wasInWatchLater) {
+          // Remove from watch later
+          await axios.delete(
+            `${BASE_URL}/users/watch-later/${videoId}`,
+            { headers }
+          );
+          toast.success("Removed from Watch Later");
+        } else {
+          // Add to watch later
+          await axios.post(
+            `${BASE_URL}/users/watch-later/${videoId}`,
+            {},
+            { headers }
+          );
+          toast.success("Added to Watch Later 🕐");
+        }
+      } catch (error) {
+        setInWatchLater(wasInWatchLater); // rollback
+        toast.error("Failed to update");
+      }
+    }
+    
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -454,7 +469,20 @@ export default function VideoPage() {
                     <Share2 size={16} strokeWidth={2} />
                     Share
                   </button>
-
+                  <button
+                    onClick={handleWatchLater}
+                    className={`
+    flex items-center gap-2 px-4 py-2 rounded-full
+    text-sm font-semibold transition-all duration-200
+    ${inWatchLater
+                        ? "bg-amber-100 text-amber-600"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }
+  `}
+                  >
+                    <Clock size={16} strokeWidth={2} />
+                    {inWatchLater ? "Saved" : "Watch Later"}
+                  </button>
                 </div>
               </div>
 
