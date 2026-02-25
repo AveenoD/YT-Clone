@@ -11,9 +11,7 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
-const corsOrigin = process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : ['http://localhost:5173', 'http://localhost:3000','https://stream-tube-d7b8.vercel.app'];
+const corsOrigin = process.env.CORS_ORIGIN;
 
 // CORS Configuration
 app.use(cors({
