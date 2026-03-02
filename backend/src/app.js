@@ -13,7 +13,7 @@ const app = express();
 
 const corsOrigin = process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : ['http://localhost:5173', 'http://localhost:3000', 'https://stream-tube-mu.vercel.app'];
+    : ['http://localhost:5173', 'http://localhost:3000'];
 
 // CORS Configuration
 app.use(cors({
