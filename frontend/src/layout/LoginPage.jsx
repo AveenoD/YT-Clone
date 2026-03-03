@@ -12,13 +12,13 @@ export default function LoginPage() {
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     
-    const baseURL = import.meta.env.VITE_BACKEND_URL;
+    const baseURL = `${import.meta.env.VITE_BACKEND_URL}/api/v1/users`;
     const handleLogin = async (e) => {
         e.preventDefault()
         setLoading(true)
 
         try {
-            const response = await axios.post(`${baseURL}/api/v1/users/login`, {
+            const response = await axios.post(`${baseURL}/login`, {
                 email,
                 password
             });
