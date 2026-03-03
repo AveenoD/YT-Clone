@@ -7,7 +7,7 @@ import {
   ThumbsUp, Share2, Bell, BellOff,
   Send, Trash2, ChevronDown, ChevronUp,
   Eye, Calendar, MessageCircle, Clock,
-  Plus, X, ListVideo, Heart
+  Plus, X, ListVideo
 } from "lucide-react";
 
 const BASE_URL = "http://localhost:5000/api/v1";
@@ -43,11 +43,7 @@ function formatDate(date) {
   });
 }
 
-// ✅ FIX: CommentItem with Like Button
-function CommentItem({ comment, currentUserId, onDelete, onLike }) {
-  const isLiked = comment.isLiked || false;
-  const likeCount = comment.likeCount || 0;
-
+function CommentItem({ comment, currentUserId, onDelete }) {
   return (
     <div className="flex gap-3 group">
       <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
@@ -76,23 +72,6 @@ function CommentItem({ comment, currentUserId, onDelete, onLike }) {
         <p className="text-sm text-gray-700 leading-relaxed break-words">
           {comment.content}
         </p>
-
-        {/* ✅ Like button for comments */}
-        <div className="flex items-center gap-4 mt-2">
-          <button
-            onClick={() => onLike?.(comment._id)}
-            className={`flex items-center gap-1 text-xs transition-colors
-                        ${isLiked ? "text-rose-500" : "text-gray-400 hover:text-rose-500"}`}
-          >
-            <Heart 
-              size={14} 
-              strokeWidth={2}
-              className={isLiked ? "fill-rose-500" : ""} 
-            />
-            {likeCount > 0 && <span className="font-medium">{likeCount}</span>}
-            <span>{isLiked ? "Liked" : "Like"}</span>
-          </button>
-        </div>
       </div>
 
       {currentUserId && comment.owner?._id === currentUserId && (
@@ -151,6 +130,9 @@ export default function VideoPage() {
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  
+  // ✅ Check if this is user's own video
+  const isOwnVideo = currentUser?._id === video?.owner?._id;
 
   useEffect(() => {
     if (!videoId) return;
@@ -184,6 +166,25 @@ export default function VideoPage() {
     fetchVideo();
   }, [videoId]);
 
+  // ✅ NEW: Check watch later status separately
+  useEffect(() => {
+    if (!videoId || !token) return;
+
+    async function checkWatchLaterStatus() {
+      try {
+        const response = await axios.get(`${BASE_URL}/users/watch-later`, { headers });
+        const watchLaterVideos = response.data.data || [];
+        const isInWatchLater = watchLaterVideos.some(v => v._id === videoId);
+        setInWatchLater(isInWatchLater);
+      } catch (error) {
+        // Silently fail - not critical
+        console.error("Failed to check watch later status");
+      }
+    }
+
+    checkWatchLaterStatus();
+  }, [videoId, token]);
+
   useEffect(() => {
     if (!videoId) return;
 
@@ -192,7 +193,7 @@ export default function VideoPage() {
       try {
         const response = await axios.get(`${BASE_URL}/comments/video/${videoId}`, { headers });
         
-        // ✅ Normalize comments with like info (fallback if API doesn't return it)
+        // ✅ Normalize comments with like info
         const fetchedComments = response.data.data || [];
         const normalizedComments = fetchedComments.map(c => ({
           ...c,
@@ -235,7 +236,7 @@ export default function VideoPage() {
     }
   }
 
-  // ✅ ADD: Handle like for comments
+  // ✅ Handle like for comments
   async function handleLikeComment(commentId) {
     if (!token) {
       toast.warning("Please login to like comments");
@@ -243,7 +244,7 @@ export default function VideoPage() {
       return;
     }
 
-    // ✅ Optimistic update
+    // Optimistic update
     setComments(prev => prev.map(c => {
       if (c._id === commentId) {
         const wasLiked = c.isLiked || false;
@@ -257,38 +258,21 @@ export default function VideoPage() {
     }));
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${BASE_URL}/likes/toggle/comment/${commentId}`,
         {},
         { headers }
       );
-      
-      // ✅ Sync with server response
-      setComments(prev => prev.map(c => {
-        if (c._id === commentId) {
-          return {
-            ...c,
-            isLiked: response.data.data.liked,
-            likeCount: response.data.data.totalLikes
-          };
-        }
-        return c;
-      }));
-      
     } catch (error) {
-      // ✅ Rollback on error: refetch comments
-      try {
-        const res = await axios.get(`${BASE_URL}/comments/video/${videoId}`, { headers });
-        const normalized = (res.data.data || []).map(c => ({
-          ...c,
-          isLiked: c.isLiked || false,
-          likeCount: c.likeCount || 0
-        }));
-        setComments(normalized);
-      } catch (e) {
-        // Silent fail
-      }
-      toast.error("Failed to update like");
+      // Rollback on error
+      const response = await axios.get(`${BASE_URL}/comments/video/${videoId}`, { headers });
+      const normalized = (response.data.data || []).map(c => ({
+        ...c,
+        isLiked: c.isLiked || false,
+        likeCount: c.likeCount || 0
+      }));
+      setComments(normalized);
+      toast.error("Failed to like comment");
     }
   }
 
@@ -302,6 +286,12 @@ export default function VideoPage() {
     const channelId = video?.owner?._id;
     if (!channelId) {
       toast.error("Channel not found");
+      return;
+    }
+
+    // ✅ Prevent subscribing to yourself
+    if (currentUser?._id === channelId) {
+      toast.warning("You cannot subscribe to yourself");
       return;
     }
 
@@ -508,11 +498,14 @@ export default function VideoPage() {
                   </div>
                 </Link>
 
-                <button onClick={handleSubscribe}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold
-                                    ${subscribed ? "bg-gray-100 text-gray-600" : "bg-gray-900 text-white shadow-md"}`}>
-                  {subscribed ? <><BellOff size={15} /> Subscribed</> : <><Bell size={15} /> Subscribe</>}
-                </button>
+                {/* ✅ Only show subscribe button if not own video */}
+                {!isOwnVideo && (
+                  <button onClick={handleSubscribe}
+                          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold
+                                      ${subscribed ? "bg-gray-100 text-gray-600" : "bg-gray-900 text-white shadow-md"}`}>
+                    {subscribed ? <><BellOff size={15} /> Subscribed</> : <><Bell size={15} /> Subscribe</>}
+                  </button>
+                )}
               </div>
 
               {video.description && (
@@ -583,13 +576,8 @@ export default function VideoPage() {
                   )}
 
                   {!commentsLoading && comments.map((comment) => (
-                    <CommentItem 
-                      key={comment._id} 
-                      comment={comment}
-                      currentUserId={currentUser?._id} 
-                      onDelete={handleDeleteComment}
-                      onLike={handleLikeComment}  // ✅ Pass like handler
-                    />
+                    <CommentItem key={comment._id} comment={comment}
+                                 currentUserId={currentUser?._id} onDelete={handleDeleteComment} />
                   ))}
                 </div>
               </div>
@@ -617,11 +605,14 @@ export default function VideoPage() {
                   </div>
                 </Link>
 
-                <button onClick={handleSubscribe}
-                        className={`w-full py-2.5 rounded-full text-sm font-semibold
-                                    ${subscribed ? "bg-gray-100 text-gray-600" : "bg-gray-900 text-white"}`}>
-                  {subscribed ? "✓ Subscribed" : "Subscribe"}
-                </button>
+                {/* ✅ Only show subscribe button if not own video */}
+                {!isOwnVideo && (
+                  <button onClick={handleSubscribe}
+                          className={`w-full py-2.5 rounded-full text-sm font-semibold
+                                      ${subscribed ? "bg-gray-100 text-gray-600" : "bg-gray-900 text-white"}`}>
+                    {subscribed ? "✓ Subscribed" : "Subscribe"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
