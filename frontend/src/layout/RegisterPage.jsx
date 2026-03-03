@@ -78,7 +78,7 @@ export default function RegisterPage() {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/v1/users/register",
+        process.env.VITE_BACKEND_URL + "/register",
         formData,
         {
           headers: {

@@ -12,7 +12,7 @@ export default function LoginPage() {
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     
-    const baseURL = 'http://localhost:5000/api/v1/users'
+    const baseURL = process.env.VITE_BACKEND_URL;
     const handleLogin = async (e) => {
         e.preventDefault()
         setLoading(true)
