@@ -4,14 +4,7 @@ import { app } from '../app.js';
 
 dotenv.config();
 
-// Initialize DB connection
-connectDB()
-    .then(() => {
-        console.log("✅ MongoDB connected");
-    })
-    .catch((err) => {
-        console.error("❌ MongoDB connection failed:", err);
-    });
+// Vercel handles the request, we just ensure DB is connecting
+connectDB().catch(err => console.error("Initial DB connection error:", err));
 
-// Export the app for Vercel's serverless handler
 export default app;
