@@ -60,50 +60,60 @@ function UploadPage() {
     return true;
   }
 
-  async function handleUpload(e) {
+ async function handleUpload(e) {
     e.preventDefault();
     if (!validate()) return;
 
-    const token = localStorage.getItem("token");
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("videoFile", videoRef.current.files[0]);      
-    formData.append("thumbnail", thumbnailRef.current.files[0]);
-
     setLoading(true);
-    setProgress(0)
+    setProgress(0);
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/videos/publish`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,        
-            "Content-Type": "multipart/form-data",
-            
-          },
-          onUploadProgress: (progressEvent) => {
-          const percent = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setProgress(percent);
-        }}
-      );
+        const token = localStorage.getItem("token");
+        
+        // 1. Upload Video to Cloudinary
+        const videoData = new FormData();
+        videoData.append("file", videoRef.current.files[0]);
+        videoData.append("upload_preset", "your_unsigned_preset"); // Create this in Cloudinary settings
 
-      toast.success("Video uploaded successfully! 🎉");
-      navigate(`/`);  
+        const videoRes = await axios.post(
+            `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/video/upload`,
+            videoData,
+            { onUploadProgress: (p ) => setProgress(Math.round((p.loaded * 50) / p.total)) }
+        );
 
+        // 2. Upload Thumbnail to Cloudinary
+        const thumbData = new FormData();
+        thumbData.append("file", thumbnailRef.current.files[0]);
+        thumbData.append("upload_preset", "your_unsigned_preset");
+
+        const thumbRes = await axios.post(
+            `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            thumbData,
+            { onUploadProgress: (p ) => setProgress(50 + Math.round((p.loaded * 50) / p.total)) }
+        );
+
+        // 3. Send URLs to your Backend (Now a tiny JSON request, no more 4.5MB limit!)
+        await axios.post(
+            `${BASE_URL}/videos/publish`,
+            {
+                title,
+                description,
+                videoFile: videoRes.data.secure_url,
+                thumbnail: thumbRes.data.secure_url,
+                duration: Math.round(videoRes.data.duration || 0)
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success("Video published! 🎉");
+        navigate(`/`);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Upload failed"
-      );
+        toast.error(error.response?.data?.message || "Upload failed");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }
+}
+
   
 
   return  <>

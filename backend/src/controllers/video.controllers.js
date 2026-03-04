@@ -141,72 +141,25 @@ const getAllVideos = asyncHandler(async (req, res) => {
 // PUBLISH A VIDEO
 // ====================================================================
 const publishAVideo = asyncHandler(async (req, res) => {
-    const { title, description } = req.body
+    const { title, description, videoFile, thumbnail, duration } = req.body;
 
-    if (!title?.trim()) {
-        throw new ApiError(400, "Title is required")
-    }
-
-    if (!description?.trim()) {
-        throw new ApiError(400, "Description is required")
-    }
-
-    if (!req.files || !req.files.videoFile || !req.files.thumbnail) {
-        throw new ApiError(400, "Video file and thumbnail are required")
-    }
-
-    const videoLocalPath = req.files.videoFile[0]?.path
-    const thumbnailLocalPath = req.files.thumbnail[0]?.path
-
-    if (!videoLocalPath || !thumbnailLocalPath) {
-        throw new ApiError(400, "Video file and thumbnail paths are missing")
-    }
-
-    let videoUploadResponse, thumbnailUploadResponse
-
-    try {
-        videoUploadResponse = await uploadOnCloudinary(videoLocalPath)
-        if (!videoUploadResponse) {
-            throw new ApiError(500, "Failed to upload video file")
-        }
-
-        thumbnailUploadResponse = await uploadOnCloudinary(thumbnailLocalPath)
-        if (!thumbnailUploadResponse) {
-            throw new ApiError(500, "Failed to upload thumbnail")
-        }
-
-    } catch (error) {
-        if (fs.existsSync(videoLocalPath)) fs.unlinkSync(videoLocalPath)
-        if (fs.existsSync(thumbnailLocalPath)) fs.unlinkSync(thumbnailLocalPath)
-        throw error
-    }
-
-    let duration = 0
-    if (videoUploadResponse.duration) {
-        duration = Math.round(videoUploadResponse.duration)
+    if (!title || !description || !videoFile || !thumbnail) {
+        throw new ApiError(400, "All fields are required");
     }
 
     const video = await Video.create({
-        videoFile: videoUploadResponse.url,
-        thumbnail: thumbnailUploadResponse.url,
-        title: title.trim(),
-        description: description.trim(),
-        duration: duration,
+        videoFile, // Now a URL from frontend
+        thumbnail, // Now a URL from frontend
+        title,
+        description,
+        duration: duration || 0,
         owner: req.user._id,
         isPublished: true
-    })
+    });
 
-    try {
-        if (fs.existsSync(videoLocalPath)) fs.unlinkSync(videoLocalPath)
-        if (fs.existsSync(thumbnailLocalPath)) fs.unlinkSync(thumbnailLocalPath)
-    } catch (cleanupError) {
-        console.error("Cleanup error:", cleanupError)
-    }
+    return res.status(201).json(new ApiResponse(201, video, "Video published successfully"));
+});
 
-    return res.status(201).json(
-        new ApiResponse(201, video, "Video published successfully")
-    )
-})
 
 // ====================================================================
 // GET VIDEO BY ID  ← only this function changed
