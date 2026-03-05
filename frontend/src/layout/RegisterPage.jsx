@@ -5,24 +5,24 @@ import {
   Eye, EyeOff, Mail, Lock, User, AtSign,
   ImagePlus, UserCircle2, Sparkles, ArrowRight, X
 } from "lucide-react";
-import {useToast} from '../toaster/UseToast.js'
+import { useToast } from '../toaster/UseToast.js'
 export default function RegisterPage() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [showPassword, setShowPassword]         = useState(false);
-  const [showConfirm, setShowConfirm]           = useState(false);
-  const [username, setUsername]                 = useState("");
-  const [fullName, setFullName]                 = useState("");
-  const [email, setEmail]                       = useState("");
-  const [password, setPassword]                 = useState("");
-  const [confirmPassword, setConfirmPassword]   = useState("");
-  const [loading, setLoading]                   = useState(false);
-  const [avatarPreview, setAvatarPreview]       = useState(null);
-  const [coverPreview, setCoverPreview]         = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
 
   const avatarRef = useRef(null);
-  const coverRef  = useRef(null);
+  const coverRef = useRef(null);
 
   // ── Validate ────────────────────────────────────────────────
   function validate() {
@@ -52,7 +52,7 @@ export default function RegisterPage() {
   // ── Handle Register ─────────────────────────────────────────
   async function handleRegister(e) {
     e.preventDefault();
-    
+
 
     if (!validate()) return;
 
@@ -63,11 +63,11 @@ export default function RegisterPage() {
     }
 
     const formData = new FormData();
-    formData.append("username",  username);
-    formData.append("fullName",  fullName);
-    formData.append("email",     email);
-    formData.append("password",  password);
-    formData.append("avatar",    avatarFile);
+    formData.append("username", username);
+    formData.append("fullName", fullName);
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("avatar", avatarFile);
 
     const coverFile = coverRef.current.files[0];
     if (coverFile) {
@@ -87,9 +87,8 @@ export default function RegisterPage() {
         }
       );
 
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      navigate("/");
+      toast.success("Account created! Please log in. 🎉");
+      navigate("/login");
 
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed. Please try again.");
