@@ -75,7 +75,7 @@ function UploadPage() {
       // 1. Upload Video to Cloudinary
       const videoData = new FormData();
       videoData.append("file", videoRef.current.files[0]);
-      videoData.append("upload_preset", uploadPreset); // Use the unsigned preset!
+      thumbData.append("upload_preset", uploadPreset); // Use the unsigned preset!
 
       const videoRes = await axios.post(
         `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
